@@ -14,8 +14,37 @@ template <typename T> std::vector<T> join_vectors(const std::vector<T> &v1, cons
     return result;
 }
 
-template <typename T, typename U>
-std::vector<U> map_vector(const std::vector<T> &vec, const std::function<U(T)> &func) {
+template <typename T, typename Func> void for_each_in_vector(std::vector<T> &vec, Func func) {
+    for (auto &elem : vec) {
+        func(elem);
+    }
+}
+
+template <typename T, typename Func> void for_each_in_vector(const std::vector<T> &vec, Func func) {
+    for (const auto &elem : vec) {
+        func(elem);
+    }
+}
+
+template <typename T> std::vector<T> join_all_vectors(const std::vector<std::vector<T>> &vectors) {
+
+    size_t total_size = 0;
+    for (const auto &v : vectors) {
+        total_size += v.size();
+    }
+
+    std::vector<T> result;
+    result.reserve(total_size);
+
+    for (const auto &v : vectors) {
+        result.insert(result.end(), v.begin(), v.end());
+    }
+
+    return result;
+}
+
+template <typename T, typename Func> auto map_vector(const std::vector<T> &vec, Func func) {
+    using U = decltype(func(std::declval<const T &>()));
     std::vector<U> result;
     result.reserve(vec.size());
     for (const auto &elem : vec) {
