@@ -3,6 +3,7 @@
 
 #include <functional>
 #include <vector>
+#include <algorithm>
 
 namespace collection_utils {
 
@@ -18,6 +19,14 @@ template <typename T, typename Func> void for_each_in_vector(std::vector<T> &vec
     for (auto &elem : vec) {
         func(elem);
     }
+}
+
+template <typename Container> bool any_of(const Container &c) {
+    return std::any_of(c.begin(), c.end(), [](auto v) { return static_cast<bool>(v); });
+}
+
+template <typename Container> bool all_of(const Container &c) {
+    return std::all_of(c.begin(), c.end(), [](auto v) { return static_cast<bool>(v); });
 }
 
 template <typename T, typename Func> void for_each_in_vector(const std::vector<T> &vec, Func func) {
