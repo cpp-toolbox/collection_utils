@@ -120,6 +120,26 @@ template <typename T, typename Func> auto map_vector(const std::vector<T> &vec, 
     return result;
 }
 
+/**
+ * @brief Transform the values of an unordered_map by applying a function to each value.
+ *
+ * @tparam K Type of the keys in the map.
+ * @tparam V Type of the input values in the map.
+ * @tparam Func Type of the function to apply. Must be callable with const V&.
+ * @param input_map Input unordered_map.
+ * @param func Function to apply to each value.
+ * @return A new unordered_map with the same keys and transformed values.
+ */
+template <typename K, typename V, typename Func> auto map_values(const std::unordered_map<K, V> &input_map, Func func) {
+    using U = decltype(func(std::declval<const V &>()));
+    std::unordered_map<K, U> result;
+    result.reserve(input_map.size());
+    for (const auto &[key, value] : input_map) {
+        result.emplace(key, func(value));
+    }
+    return result;
+}
+
 }; // namespace collection_utils
 
 #endif // COLLECTION_UTILS_HPP
