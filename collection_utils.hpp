@@ -135,8 +135,82 @@ template <typename K, typename V, typename Func> auto map_values(const std::unor
     std::unordered_map<K, U> result;
     result.reserve(input_map.size());
     for (const auto &[key, value] : input_map) {
-        result.emplace(key, func(value));
+        // NOTE: move is fine here because func(value) is a temporary that's about to go out of scope
+        // the reason why we prefer move is that if the result is not copy constructible we get errors from this
+        result.emplace(key, std::move(func(value)));
     }
+    return result;
+}
+
+/**
+ * @brief Filter an unordered_map based on a predicate applied to key-value pairs.
+ *
+ * @tparam K Type of keys in the map.
+ * @tparam V Type of values in the map.
+ * @tparam Pred Type of the predicate. Must be callable with (const K&, const V&).
+ * @param input_map Input unordered_map to filter.
+ * @param pred Predicate function that returns true to keep an element, false to remove it.
+ * @return A new unordered_map containing only the key-value pairs for which pred(key, value) is true.
+ */
+template <typename K, typename V, typename Pred>
+std::unordered_map<K, V> filter_map(const std::unordered_map<K, V> &input_map, Pred pred) {
+    std::unordered_map<K, V> result;
+    result.reserve(input_map.size());
+
+    for (const auto &[key, value] : input_map) {
+        if (pred(key, value)) {
+            result.emplace(key, value);
+        }
+    }
+
+    return result;
+}
+
+/**
+ * @brief Filter an unordered_map based on a predicate applied to its keys.
+ *
+ * @tparam K Type of keys in the map.
+ * @tparam V Type of values in the map.
+ * @tparam Pred Type of the predicate. Must be callable with (const K&).
+ * @param input_map Input unordered_map to filter.
+ * @param pred Predicate function that returns true to keep an element, false to remove it.
+ * @return A new unordered_map containing only the key-value pairs for which pred(key) is true.
+ */
+template <typename K, typename V, typename Pred>
+std::unordered_map<K, V> filter_map_by_keys(const std::unordered_map<K, V> &input_map, Pred pred) {
+    std::unordered_map<K, V> result;
+    result.reserve(input_map.size());
+
+    for (const auto &[key, value] : input_map) {
+        if (pred(key)) {
+            result.emplace(key, value);
+        }
+    }
+
+    return result;
+}
+
+/**
+ * @brief Filter an unordered_map based on a predicate applied to its values.
+ *
+ * @tparam K Type of keys in the map.
+ * @tparam V Type of values in the map.
+ * @tparam Pred Type of the predicate. Must be callable with (const V&).
+ * @param input_map Input unordered_map to filter.
+ * @param pred Predicate function that returns true to keep an element, false to remove it.
+ * @return A new unordered_map containing only the key-value pairs for which pred(value) is true.
+ */
+template <typename K, typename V, typename Pred>
+std::unordered_map<K, V> filter_map_by_values(const std::unordered_map<K, V> &input_map, Pred pred) {
+    std::unordered_map<K, V> result;
+    result.reserve(input_map.size());
+
+    for (const auto &[key, value] : input_map) {
+        if (pred(value)) {
+            result.emplace(key, value);
+        }
+    }
+
     return result;
 }
 
