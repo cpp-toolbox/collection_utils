@@ -8,6 +8,18 @@
 namespace collection_utils {
 
 /**
+ * @brief Check if a value exists in a vector.
+ *
+ * @tparam T Type of elements in the vector.
+ * @param vec The vector to search within.
+ * @param value The value to search for.
+ * @return true if the value exists in the vector, false otherwise.
+ */
+template <typename T> bool contains(const std::vector<T> &vec, const T &value) {
+    return std::find(vec.begin(), vec.end(), value) != vec.end();
+}
+
+/**
  * @brief Concatenate two vectors into a single vector.
  *
  * @tparam T Type of elements in the vectors.
