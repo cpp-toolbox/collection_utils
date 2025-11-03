@@ -10,6 +10,8 @@
 
 namespace collection_utils {
 
+// startfold container like
+
 /**
  * @brief Check if any element in the container evaluates to true.
  *
@@ -35,6 +37,39 @@ template <typename Container> bool any_of(const Container &c) {
 template <typename Container> bool all_of(const Container &c) {
     return std::all_of(c.begin(), c.end(), [](auto v) { return static_cast<bool>(v); });
 }
+
+
+// endfold
+
+// startfold map like
+/*
+ * @brief Erase an element from an associative container by key, if it exists.
+ *
+ * Works with std::unordered_map, std::map, std::unordered_set, std::set,
+ * or any custom container exposing find() and erase().
+ *
+ * @tparam MapLike Any container supporting find() and erase(iterator) or erase(key).
+ * @param map The container to modify.
+ * @param key The key of the element to erase.
+ * @return true if an element was erased, false otherwise.
+ *
+ * @example
+ * @code
+ * std::unordered_map<int, std::string> data = {{1, "one"}, {2, "two"}};
+ * bool removed = erase_key(data, 1);
+ * // removed == true, data now contains only {2, "two"}
+ * @endcode
+ */
+template <typename MapLike, typename Key> bool erase(MapLike &map, const Key &key) {
+    if (auto it = map.find(key); it != map.end()) {
+        map.erase(it);
+        return true;
+    }
+    return false;
+}
+
+
+// endfold
 
 // startfold vectors
 
@@ -140,41 +175,36 @@ template <typename T, typename Func> auto map_vector(const std::vector<T> &vec, 
 
 // startfold unordered maps
 
-/**
- * @brief Transform the values of an unordered_map by applying a function to each value.
+/*
+ * @brief Apply a function to each key in a modifiable unordered map.
  *
- * @tparam K Type of the keys in the map.
- * @tparam V Type of the input values in the map.
- * @tparam Func Type of the function to apply. Must be callable with const V&.
- * @param input_map Input unordered_map.
- * @param func Function to apply to each value.
- * @return A new unordered_map with the same keys and transformed values.
+ * @tparam K Type of keys in the map.
+ * @tparam V Type of values in the map.
+ * @tparam Func Type of the function to apply. Must be callable with K&.
+ * @param map The unordered map whose keys will be processed.
+ * @param func Function to apply to each key.
  */
-template <typename K, typename V, typename Func> auto map_values(const std::unordered_map<K, V> &input_map, Func func) {
-    using U = decltype(func(std::declval<const V &>()));
-    std::unordered_map<K, U> result;
-    result.reserve(input_map.size());
-    for (const auto &[key, value] : input_map) {
-        // NOTE: move is fine here because func(value) is a temporary that's about to go out of scope
-        // the reason why we prefer move is that if the result is not copy constructible we get errors from this
-        result.emplace(key, std::move(func(value)));
+template <typename K, typename V, typename Func> void for_each_key_in_map(std::unordered_map<K, V> &map, Func func) {
+    for (auto &pair : map) {
+        func(pair.first);
     }
-    return result;
 }
 
 /**
- * @brief Apply a function to each key of a modifiable unordered_map.
+ * @brief Apply a function to each value in a modifiable unordered map.
  *
- * @tparam Key Type of the keys in the unordered_map.
- * @tparam Value Type of the values in the unordered_map.
- * @tparam Func Type of the function to apply. Must be callable with Key&.
- * @param map The unordered_map whose keys will be processed.
- * @param func Function to apply to each key.
+ * @note the values are iterated over by reference, and passed ot the function by reference or not depending on the
+ * siganture of the lambda that comes in
+ *
+ * @tparam K Type of keys in the map.
+ * @tparam V Type of values in the map.
+ * @tparam Func Type of the function to apply. Must be callable with V&.
+ * @param map The unordered map whose values will be processed.
+ * @param func Function to apply to each value.
  */
-template <typename Key, typename Value, typename Func>
-void for_each_key_in_map(std::unordered_map<Key, Value> &map, Func func) {
+template <typename K, typename V, typename Func> void for_each_value_in_map(std::unordered_map<K, V> &map, Func func) {
     for (auto &pair : map) {
-        func(pair.first);
+        func(pair.second);
     }
 }
 
@@ -193,6 +223,57 @@ void for_each_pair_in_map(std::unordered_map<Key, Value> &map, Func func) {
         func(pair.first, pair.second);
     }
 }
+
+
+/**
+ * @brief Transform the values of an unordered_map by applying a function to each value.
+ *
+ * @tparam K Type of the keys in the map.
+ * @tparam V Type of the input values in the map.
+ * @tparam Func Type of the function to apply. Must be callable with const V&.
+ * @param input_map Input unordered_map.
+ * @param func Function to apply to each value.
+ * @return A new unordered_map with the same keys and transformed values.
+ */
+template <typename Map, typename Func> auto map_values(const Map &input_map, Func func) {
+    using KeyType = typename Map::key_type;
+    using ValueType = decltype(func(std::declval<typename Map::mapped_type>()));
+
+    std::unordered_map<KeyType, ValueType> result;
+    result.reserve(input_map.size());
+
+    for (const auto &[key, value] : input_map) {
+        // NOTE: move is fine here because func(value) is a temporary that's about to go out of scope
+        // the reason why we prefer move is that if the result is not copy constructible we get errors from this
+        result.emplace(key, std::move(func(value)));
+    }
+    return result;
+}
+
+/**
+ * @brief Transform the entries (key-value pairs) of an unordered_map by applying a function to each pair.
+ *
+ * @tparam K Type of the keys in the input map.
+ * @tparam V Type of the values in the input map.
+ * @tparam Func Type of the function to apply. Must be callable with (const K&, const V&) and return std::pair<K2, V2>.
+ * @param input_map Input unordered_map.
+ * @param func Function to apply to each key-value pair.
+ * @return A new unordered_map with transformed keys and values.
+ */
+template <typename K, typename V, typename Func>
+auto map_entries(const std::unordered_map<K, V> &input_map, Func func) {
+    using PairType = decltype(func(std::declval<const K &>(), std::declval<const V &>()));
+    using K2 = typename PairType::first_type;
+    using V2 = typename PairType::second_type;
+
+    std::unordered_map<K2, V2> result;
+    result.reserve(input_map.size());
+    for (const auto &[key, value] : input_map) {
+        auto [new_key, new_value] = func(key, value);
+        result.emplace(std::move(new_key), std::move(new_value));
+    }
+    return result;
+
 
 /**
  * @brief Filter an unordered_map based on a predicate applied to key-value pairs.
@@ -379,6 +460,7 @@ template <typename Key, typename Value> std::vector<Key> keys(const std::unorder
     }
     return keys;
 }
+
 // endfold
 
 // startfold sets
