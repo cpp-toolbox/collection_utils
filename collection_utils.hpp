@@ -2,10 +2,41 @@
 #define COLLECTION_UTILS_HPP
 
 #include <functional>
+#include <stdexcept>
 #include <vector>
 #include <algorithm>
+#include <set>
+#include <unordered_set>
 
 namespace collection_utils {
+
+/**
+ * @brief Check if any element in the container evaluates to true.
+ *
+ * Elements are cast to bool before evaluation.
+ *
+ * @tparam Container Type of container supporting begin() and end().
+ * @param c Container to check.
+ * @return true if at least one element is truthy, false otherwise.
+ */
+template <typename Container> bool any_of(const Container &c) {
+    return std::any_of(c.begin(), c.end(), [](auto v) { return static_cast<bool>(v); });
+}
+
+/**
+ * @brief Check if all elements in the container evaluate to true.
+ *
+ * Elements are cast to bool before evaluation.
+ *
+ * @tparam Container Type of container supporting begin() and end().
+ * @param c Container to check.
+ * @return true if all elements are truthy, false otherwise.
+ */
+template <typename Container> bool all_of(const Container &c) {
+    return std::all_of(c.begin(), c.end(), [](auto v) { return static_cast<bool>(v); });
+}
+
+// startfold vectors
 
 /**
  * @brief Check if a value exists in a vector.
@@ -47,32 +78,6 @@ template <typename T, typename Func> void for_each_in_vector(std::vector<T> &vec
     for (auto &elem : vec) {
         func(elem);
     }
-}
-
-/**
- * @brief Check if any element in the container evaluates to true.
- *
- * Elements are cast to bool before evaluation.
- *
- * @tparam Container Type of container supporting begin() and end().
- * @param c Container to check.
- * @return true if at least one element is truthy, false otherwise.
- */
-template <typename Container> bool any_of(const Container &c) {
-    return std::any_of(c.begin(), c.end(), [](auto v) { return static_cast<bool>(v); });
-}
-
-/**
- * @brief Check if all elements in the container evaluate to true.
- *
- * Elements are cast to bool before evaluation.
- *
- * @tparam Container Type of container supporting begin() and end().
- * @param c Container to check.
- * @return true if all elements are truthy, false otherwise.
- */
-template <typename Container> bool all_of(const Container &c) {
-    return std::all_of(c.begin(), c.end(), [](auto v) { return static_cast<bool>(v); });
 }
 
 /**
@@ -131,6 +136,9 @@ template <typename T, typename Func> auto map_vector(const std::vector<T> &vec, 
     }
     return result;
 }
+// endfold
+
+// startfold unordered maps
 
 /**
  * @brief Transform the values of an unordered_map by applying a function to each value.
@@ -152,6 +160,38 @@ template <typename K, typename V, typename Func> auto map_values(const std::unor
         result.emplace(key, std::move(func(value)));
     }
     return result;
+}
+
+/**
+ * @brief Apply a function to each key of a modifiable unordered_map.
+ *
+ * @tparam Key Type of the keys in the unordered_map.
+ * @tparam Value Type of the values in the unordered_map.
+ * @tparam Func Type of the function to apply. Must be callable with Key&.
+ * @param map The unordered_map whose keys will be processed.
+ * @param func Function to apply to each key.
+ */
+template <typename Key, typename Value, typename Func>
+void for_each_key_in_map(std::unordered_map<Key, Value> &map, Func func) {
+    for (auto &pair : map) {
+        func(pair.first);
+    }
+}
+
+/**
+ * @brief Apply a function to each key-value pair of a modifiable unordered_map.
+ *
+ * @tparam Key Type of the keys in the unordered_map.
+ * @tparam Value Type of the values in the unordered_map.
+ * @tparam Func Type of the function to apply. Must be callable with (Key&, Value&).
+ * @param map The unordered_map to process.
+ * @param func Function to apply to each key-value pair.
+ */
+template <typename Key, typename Value, typename Func>
+void for_each_pair_in_map(std::unordered_map<Key, Value> &map, Func func) {
+    for (auto &pair : map) {
+        func(pair.first, pair.second);
+    }
 }
 
 /**
@@ -201,6 +241,20 @@ std::unordered_map<K, V> filter_map_by_keys(const std::unordered_map<K, V> &inpu
 
     return result;
 }
+/**
+ * @brief Keep only the entries in an unordered_map whose keys are in a specified set.
+ *
+ * @tparam K Type of keys in the map and the set.
+ * @tparam V Type of values in the map.
+ * @param input_map The unordered_map to filter.
+ * @param key_set The set of keys to keep.
+ * @return std::unordered_map<K, V> A new unordered_map containing only entries with keys in key_set.
+ */
+template <typename K, typename V>
+std::unordered_map<K, V> filter_map_by_key_set(const std::unordered_map<K, V> &input_map,
+                                               const std::unordered_set<K> &key_set) {
+    return filter_map_by_keys(input_map, [&](const K &key) { return key_set.find(key) != key_set.end(); });
+}
 
 /**
  * @brief Filter an unordered_map based on a predicate applied to its values.
@@ -225,6 +279,162 @@ std::unordered_map<K, V> filter_map_by_values(const std::unordered_map<K, V> &in
 
     return result;
 }
+
+/**
+ * @brief Build an unordered_map from a vector of objects, using a member or attribute as the key.
+ *
+ * @tparam Key Type of the key to use in the map.
+ * @tparam Value Type of the objects in the vector.
+ * @tparam KeyFunc Callable type that takes a const Value& and returns a Key.
+ * @param vec Vector of objects to convert to a map.
+ * @param key_func Function that extracts the key from a Value.
+ * @return std::unordered_map<Key, Value> The resulting map.
+ *
+ * @note If multiple objects in the vector produce the same key, only the first one encountered will be inserted into
+ * the map. Subsequent objects with duplicate keys will be ignored. Therefore if there is such duplicate data then
+ * information will be lost
+ */
+template <typename Key, typename Value, typename KeyFunc>
+std::unordered_map<Key, Value> build_map_from_vector(const std::vector<Value> &vec, KeyFunc key_func) {
+    std::unordered_map<Key, Value> map;
+    for (const auto &item : vec) {
+        map.emplace(key_func(item), item); // first occurrence wins
+    }
+    return map;
+}
+
+/**
+ * @brief Combine two unordered_maps with the same keyset using a provided binary function.
+ *
+ * @tparam Key Type of the keys in the maps.
+ * @tparam Value1 Type of the values in the first map.
+ * @tparam Value2 Type of the values in the second map.
+ * @tparam ResultType Type of the values in the resulting map.
+ * @tparam Func Callable type that takes (const Value1&, const Value2&) and returns ResultType.
+ * @param map1 First unordered_map.
+ * @param map2 Second unordered_map.
+ * @param func Function to combine corresponding values from map1 and map2.
+ * @return std::unordered_map<Key, ResultType> Resulting map after applying func to each value pair.
+ *
+ * @throws std::invalid_argument if the keysets of the two maps do not match.
+ */
+template <typename Key, typename Value1, typename Value2,
+          typename ResultType = decltype(std::declval<Value1>() + std::declval<Value2>()), typename Func>
+std::unordered_map<Key, ResultType> combine_maps(const std::unordered_map<Key, Value1> &map1,
+                                                 const std::unordered_map<Key, Value2> &map2, Func func) {
+    if (map1.size() != map2.size()) {
+        throw std::invalid_argument("Maps do not have the same number of elements");
+    }
+
+    std::unordered_map<Key, ResultType> result;
+
+    for (const auto &pair : map1) {
+        const Key &key = pair.first;
+        auto it2 = map2.find(key);
+        if (it2 == map2.end()) {
+            throw std::invalid_argument("Keysets of the maps do not match");
+        }
+        result[key] = func(pair.second, it2->second);
+    }
+
+    return result;
+}
+
+/**
+ * @brief Extracts all values from an unordered_map into a vector.
+ *
+ * @tparam Key Type of the keys in the map.
+ * @tparam Value Type of the values in the map.
+ * @param map The unordered_map to extract values from.
+ * @return std::vector<Value> A vector containing all values from the map.
+ *
+ * @note The order of values in the resulting vector is unspecified because
+ *       unordered_map does not guarantee ordering.
+ */
+template <typename Key, typename Value> std::vector<Value> values(const std::unordered_map<Key, Value> &map) {
+    std::vector<Value> values;
+    values.reserve(map.size()); // optional: reserve space for efficiency
+    for (const auto &pair : map) {
+        values.push_back(pair.second);
+    }
+    return values;
+}
+
+/**
+ * @brief Extracts all keys from an unordered_map into a vector.
+ *
+ * @tparam Key Type of the keys in the map.
+ * @tparam Value Type of the values in the map.
+ * @param map The unordered_map to extract keys from.
+ * @return std::vector<Key> A vector containing all keys from the map.
+ *
+ * @note The order of keys in the resulting vector is unspecified because
+ *       unordered_map does not guarantee ordering.
+ */
+template <typename Key, typename Value> std::vector<Key> keys(const std::unordered_map<Key, Value> &map) {
+    std::vector<Key> keys;
+    keys.reserve(map.size()); // optional: reserve space for efficiency
+    for (const auto &pair : map) {
+        keys.push_back(pair.first);
+    }
+    return keys;
+}
+// endfold
+
+// startfold sets
+
+/**
+ * @brief Converts a vector into a set, removing duplicates.
+ *
+ * @tparam T Type of the elements in the vector.
+ * @param vec The vector to convert.
+ * @return std::set<T> A set containing all unique elements from the vector.
+ *
+ * @note The elements in the set are sorted because std::set maintains order.
+ */
+template <typename T> std::set<T> to_set(const std::vector<T> &vec) { return std::set<T>(vec.begin(), vec.end()); }
+
+/**
+ * @brief Converts a vector into an unordered_set, removing duplicates.
+ *
+ * @tparam T Type of the elements in the vector.
+ * @param vec The vector to convert.
+ * @return std::unordered_set<T> An unordered_set containing all unique elements from the vector.
+ *
+ * @note The elements in the unordered_set are not sorted.
+ */
+template <typename T> std::unordered_set<T> to_unordered_set(const std::vector<T> &vec) {
+    return std::unordered_set<T>(vec.begin(), vec.end());
+}
+
+/**
+ * @brief Computes the intersection of two sets.
+ *
+ * @tparam SetType Type of the input sets (std::set or std::unordered_set).
+ * @param a First set.
+ * @param b Second set.
+ * @return SetType A new set containing elements present in both input sets.
+ *
+ * @note For std::set, the result will be ordered. For std::unordered_set, order is unspecified.
+ */
+template <typename SetType> SetType set_intersection(const SetType &a, const SetType &b) {
+    SetType result;
+
+    if constexpr (std::is_same_v<SetType, std::set<typename SetType::value_type>>) {
+        // use std::set_intersection for ordered sets
+        std::set_intersection(a.begin(), a.end(), b.begin(), b.end(), std::inserter(result, result.begin()));
+    } else {
+        // Fallback for unordered_set or other sets
+        for (const auto &elem : a) {
+            if (b.count(elem)) {
+                result.insert(elem);
+            }
+        }
+    }
+
+    return result;
+}
+// endfold
 
 }; // namespace collection_utils
 
