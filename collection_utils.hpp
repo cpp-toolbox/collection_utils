@@ -38,7 +38,6 @@ template <typename Container> bool all_of(const Container &c) {
     return std::all_of(c.begin(), c.end(), [](auto v) { return static_cast<bool>(v); });
 }
 
-
 // endfold
 
 // startfold map like
@@ -67,7 +66,6 @@ template <typename MapLike, typename Key> bool erase(MapLike &map, const Key &ke
     }
     return false;
 }
-
 
 // endfold
 
@@ -224,7 +222,6 @@ void for_each_pair_in_map(std::unordered_map<Key, Value> &map, Func func) {
     }
 }
 
-
 /**
  * @brief Transform the values of an unordered_map by applying a function to each value.
  *
@@ -273,7 +270,7 @@ auto map_entries(const std::unordered_map<K, V> &input_map, Func func) {
         result.emplace(std::move(new_key), std::move(new_value));
     }
     return result;
-
+}
 
 /**
  * @brief Filter an unordered_map based on a predicate applied to key-value pairs.
