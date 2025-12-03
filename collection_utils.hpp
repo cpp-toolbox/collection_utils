@@ -173,6 +173,32 @@ template <typename T, typename Func> auto map_vector(const std::vector<T> &vec, 
 
 // startfold unordered maps
 
+/**
+ * @brief Inverts a mapping from key to value into a hash map of value to key.
+ *
+ * This function creates a new `std::unordered_map` whose keys are the values
+ * of the input associative container and whose mapped values are the original
+ * keys. This is useful when performing a reverse lookup.
+ *
+ * @tparam Map An associative container type providing `key_type`,
+ *             `mapped_type`, and iteration over `std::pair<const key_type, mapped_type>`.
+ *
+ * @param m The input map to invert.
+ *
+ * @return std::unordered_map<Map::mapped_type, Map::key_type>
+ *         A new unordered map containing reversed key/value pairs.
+ *
+ * @note If the input container contains duplicate values, only one of the
+ *       corresponding keys will be preserved in the resulting unordered map.
+ *       The specific key that remains depends on hash bucket insertion order.
+ */
+template <typename Map> std::unordered_map<typename Map::mapped_type, typename Map::key_type> invert(const Map &m) {
+    std::unordered_map<typename Map::mapped_type, typename Map::key_type> result;
+    for (const auto &kv : m)
+        result.emplace(kv.second, kv.first);
+    return result;
+}
+
 /*
  * @brief Apply a function to each key in a modifiable unordered map.
  *
