@@ -67,6 +67,30 @@ template <typename MapLike, typename Key> bool erase(MapLike &map, const Key &ke
     return false;
 }
 
+/**
+ * @brief Check if a key exists in an unordered_map.
+ *
+ * @tparam Map An unordered_map-like type (must support find() and key_type).
+ * @param map The unordered_map to search within.
+ * @param key The key to search for.
+ * @return true if the key exists in the map, false otherwise.
+ */
+template <typename Map> bool contains_key(const Map &map, const typename Map::key_type &key) {
+    return map.find(key) != map.end();
+}
+
+/**
+ * @brief Check if a key does NOT exist in an unordered_map.
+ *
+ * @tparam Map An unordered_map-like type (must support find() and key_type).
+ * @param map The unordered_map to search within.
+ * @param key The key to check for absence.
+ * @return true if the key does NOT exist in the map, false otherwise.
+ */
+template <typename Map> bool does_not_contain_key(const Map &map, const typename Map::key_type &key) {
+    return map.find(key) == map.end();
+}
+
 // endfold
 
 // startfold vectors
