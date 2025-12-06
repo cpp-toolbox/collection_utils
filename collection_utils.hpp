@@ -197,6 +197,32 @@ template <typename T, typename Func> auto map_vector(const std::vector<T> &vec, 
 
 // startfold unordered maps
 
+/**
+ * @brief Inverts a mapping from key to value into a hash map of value to key.
+ *
+ * This function creates a new `std::unordered_map` whose keys are the values
+ * of the input associative container and whose mapped values are the original
+ * keys. This is useful when performing a reverse lookup.
+ *
+ * @tparam Map An associative container type providing `key_type`,
+ *             `mapped_type`, and iteration over `std::pair<const key_type, mapped_type>`.
+ *
+ * @param m The input map to invert.
+ *
+ * @return std::unordered_map<Map::mapped_type, Map::key_type>
+ *         A new unordered map containing reversed key/value pairs.
+ *
+ * @note If the input container contains duplicate values, only one of the
+ *       corresponding keys will be preserved in the resulting unordered map.
+ *       The specific key that remains depends on hash bucket insertion order.
+ */
+template <typename Map> std::unordered_map<typename Map::mapped_type, typename Map::key_type> invert(const Map &m) {
+    std::unordered_map<typename Map::mapped_type, typename Map::key_type> result;
+    for (const auto &kv : m)
+        result.emplace(kv.second, kv.first);
+    return result;
+}
+
 /*
  * @brief Apply a function to each key in a modifiable unordered map.
  *
@@ -440,6 +466,44 @@ std::unordered_map<Key, ResultType> combine_maps(const std::unordered_map<Key, V
     }
 
     return result;
+}
+
+/**
+ * @brief Filters two maps to only include entries with keys that exist in both maps.
+ *
+ * This function takes two maps of the same type and returns a pair of maps where
+ * each map only contains the keys that are present in both input maps.
+ *
+ * @tparam MapType The type of the input maps. Must support `key_type`, iteration,
+ * and lookup operations. Typically `std::unordered_map` or `std::map`.
+ *
+ * @param map1 The first input map.
+ * @param map2 The second input map.
+ * @return A `std::pair` of filtered maps `{filtered_map1, filtered_map2}` where:
+ *   - `filtered_map1` contains only the entries from `map1` whose keys exist in `map2`.
+ *   - `filtered_map2` contains only the entries from `map2` whose keys exist in `map1`.
+ *
+ * @note Requires helper functions:
+ *   - `keys(const MapType&)` that returns a container of keys in the map.
+ *   - `filter_map_by_key_set(const MapType&, const std::unordered_set<typename MapType::key_type>&)`
+ *     that returns a map containing only the specified keys.
+ */
+template <typename MapType>
+std::pair<MapType, MapType> filter_maps_to_shared_keys(const MapType &map1, const MapType &map2) {
+    auto keys1 = keys(map1);
+    auto keys2 = keys(map2);
+
+    std::unordered_set<typename MapType::key_type> shared_keys;
+    for (auto &k : keys1) {
+        if (keys2.find(k) != keys2.end()) {
+            shared_keys.insert(k);
+        }
+    }
+
+    MapType filtered_map1 = filter_map_by_key_set(map1, shared_keys);
+    MapType filtered_map2 = filter_map_by_key_set(map2, shared_keys);
+
+    return {filtered_map1, filtered_map2};
 }
 
 /**
