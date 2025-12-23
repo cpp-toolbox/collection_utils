@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <set>
 #include <unordered_set>
+#include <optional>
 
 namespace collection_utils {
 
@@ -89,6 +90,50 @@ template <typename Map> bool contains_key(const Map &map, const typename Map::ke
  */
 template <typename Map> bool does_not_contain_key(const Map &map, const typename Map::key_type &key) {
     return map.find(key) == map.end();
+}
+
+/**
+ * @brief Safely get a const reference to a value in a map.
+ *
+ * This function behaves like `map.at(key)` but does **not** throw if the key
+ * is missing. Instead, it returns `std::nullopt`.
+ *
+ * @tparam Map The type of the map (e.g., std::unordered_map<Key, T>).
+ * @tparam Key The key type used for lookup.
+ * @param map The map to query.
+ * @param key The key to look for.
+ * @return std::optional<std::reference_wrapper<const Map::mapped_type>>
+ *         - Contains a const reference to the value if the key exists.
+ *         - `std::nullopt` if the key is not found.
+ */
+template <typename Map, typename Key>
+std::optional<std::reference_wrapper<const typename Map::mapped_type>> at_optional(const Map &map, const Key &key) {
+    auto it = map.find(key);
+    if (it != map.end())
+        return std::cref(it->second);
+    return std::nullopt;
+}
+
+/**
+ * @brief Safely get a mutable reference to a value in a map.
+ *
+ * This function behaves like `map.at(key)` but does **not** throw if the key
+ * is missing. Instead, it returns `std::nullopt`.
+ *
+ * @tparam Map The type of the map (e.g., std::unordered_map<Key, T>).
+ * @tparam Key The key type used for lookup.
+ * @param map The map to query.
+ * @param key The key to look for.
+ * @return std::optional<std::reference_wrapper<Map::mapped_type>>
+ *         - Contains a mutable reference to the value if the key exists.
+ *         - `std::nullopt` if the key is not found.
+ */
+template <typename Map, typename Key>
+std::optional<std::reference_wrapper<typename Map::mapped_type>> at_optional(Map &map, const Key &key) {
+    auto it = map.find(key);
+    if (it != map.end())
+        return std::ref(it->second);
+    return std::nullopt;
 }
 
 // endfold
