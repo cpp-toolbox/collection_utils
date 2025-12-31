@@ -169,6 +169,18 @@ template <typename T> std::vector<T> join_vectors(const std::vector<T> &v1, cons
 }
 
 /**
+ * @brief Extend a vector by appending the elements of another vector.
+ *
+ * @tparam T Type of elements in the vectors.
+ * @param v1 Vector to be extended. Will be modified in-place.
+ * @param v2 Vector whose elements will be appended to v1.
+ */
+template <typename T> void extend_vector(std::vector<T> &v1, const std::vector<T> &v2) {
+    v1.reserve(v1.size() + v2.size()); // Avoid multiple reallocations
+    v1.insert(v1.end(), v2.begin(), v2.end());
+}
+
+/**
  * @brief Apply a function to each element of a modifiable vector.
  *
  * @tparam T Type of elements in the vector.
